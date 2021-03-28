@@ -1,0 +1,53 @@
+from fastai.vision.all import *
+from fastai.vision.widgets import *
+from bing_image_downloader import downloader
+import pyrebase
+import os
+""" import firebase_admin
+from firebase_admin import db, credentials
+
+cred = credentials.Certificate("flask_server/firebase/firebase-sdk.json")
+
+firebase_admin.initialize_app(cred, {
+    'databaseURL': 'https://imagemodelsai-default-rtdb.firebaseio.com/'
+}) """
+
+""" ref = db.reference("/") """
+
+config = {
+    "apiKey": "AIzaSyDbEnhgLOOOUlnC32fUNpPBICs7wkndO3k",
+    "authDomain": "imagemodelsai.firebaseapp.com",
+    "databaseURL": "https://imagemodelsai-default-rtdb.firebaseio.com",
+    "projectId": "imagemodelsai",
+    "storageBucket": "imagemodelsai.appspot.com",
+    "messagingSenderId": "735222779032",
+    "appId": "1:735222779032:web:89067b160b0f3efe6d94ed",
+    "measurementId": "G-M0TEM10TWM"
+}
+
+firebase = pyrebase.initialize_app(config)
+storage = firebase.storage()
+
+def train():
+    # Puts images in a datablock
+    images = DataBlock(
+        blocks=(ImageBlock, CategoryBlock),
+        get_items=get_image_files,
+        splitter=RandomSplitter(valid_pct=0.2),
+        get_y=parent_label,
+        item_tfms=Resize(256, ResizeMethod.Squish)
+    )
+
+    dataset = images.dataloaders(Path("./flask_server/img"), num_workers=0)
+
+    model = cnn_learner(dataset, resnet18, metrics=error_rate)
+    model.fine_tune(5)
+
+def download_images(keyword):
+    downloader.download(keyword, limit=100, output_dir="flask_server\img", timeout=30, adult_filter_off=True)
+
+def upload_images():
+    storage.child("images").put("./flask_server/img/cat/Image_3.jpg")
+    storage.child("py").put("./flask_server/server.py")
+
+upload_images()
